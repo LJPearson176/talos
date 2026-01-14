@@ -2034,3 +2034,12 @@
 {"timestamp": 1768404724.855816, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": true, "is_emergency_mode": false, "is_admin": false}, "context": {"role_mask": "1", "action_id": "302", "epoch": "0"}}
 {"timestamp": 1768404724.8560011, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": false, "is_emergency_mode": true, "is_admin": false}, "context": {"role_mask": "1", "action_id": "302", "epoch": "1"}}
 {"timestamp": 1768404724.856137, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": false, "is_emergency_mode": true, "is_admin": true}, "context": {"role_mask": "4", "action_id": "302", "epoch": "1"}}
+{"timestamp": 1768410770.278856, "policy": "StandardAccess", "allowed": true, "trace": {"is_admin": true, "is_safe_action": false}, "context": {"role_mask": "4", "action_id": "202"}}
+{"timestamp": 1768410770.279402, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": true, "is_emergency_mode": false, "is_admin": false}, "context": {"role_mask": "1", "action_id": "302", "epoch": "0"}}
+{"timestamp": 1768410770.279552, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": false, "is_emergency_mode": true, "is_admin": false}, "context": {"role_mask": "1", "action_id": "302", "epoch": "1"}}
+{"timestamp": 1768410770.279681, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": false, "is_emergency_mode": true, "is_admin": true}, "context": {"role_mask": "4", "action_id": "302", "epoch": "1"}}
+{"timestamp": 1768410770.27984, "policy": "StandardAccess", "allowed": true, "trace": {"is_admin": false, "is_safe_action": true}, "context": {"role_mask": "1", "action_id": "101"}}
+{"timestamp": 1768410770.28002, "policy": "StandardAccess", "allowed": false, "trace": {"is_admin": false, "is_safe_action": false}, "context": {"role_mask": "1", "action_id": "202"}}
+{"timestamp": 1768410770.286348, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": true, "is_emergency_mode": false, "is_admin": false}, "context": {"role_mask": "1", "action_id": "302", "epoch": "0"}}
+{"timestamp": 1768410770.286486, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": false, "is_emergency_mode": true, "is_admin": false}, "context": {"role_mask": "1", "action_id": "302", "epoch": "1"}}
+{"timestamp": 1768410770.2865732, "policy": "EpochState", "allowed": true, "trace": {"is_normal_mode": false, "is_emergency_mode": true, "is_admin": true}, "context": {"role_mask": "4", "action_id": "302", "epoch": "1"}}

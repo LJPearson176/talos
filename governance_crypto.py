@@ -51,15 +51,17 @@ class MerkleLogger:
         return curr_hash
 
 class Warrant:
-    def __init__(self, action, agent_id, allowed, timestamp, signature):
+    def __init__(self, action, agent_id, allowed, timestamp, signature, nonce=0, expiry=0.0):
         self.action = action
         self.agent_id = agent_id
         self.allowed = allowed
         self.timestamp = timestamp
         self.signature = signature
+        self.nonce = nonce
+        self.expiry = expiry
 
     def __repr__(self):
-        return f"<Warrant {self.action} allowed={self.allowed} sig={self.signature[:8]}...>"
+        return f"<Warrant {self.action} allowed={self.allowed} nonce={self.nonce} exp={self.expiry} sig={self.signature[:8]}...>"
 
     def to_dict(self):
         return {
@@ -67,34 +69,49 @@ class Warrant:
             "agent_id": self.agent_id,
             "allowed": self.allowed,
             "timestamp": self.timestamp,
+            "nonce": self.nonce,
+            "expiry": self.expiry,
             "signature": self.signature
         }
 
     @staticmethod
-    def create(signing_key_hex, action, agent_id, allowed, timestamp):
-        """Creates a signed Warrant."""
+    def create(signing_key_hex, action, agent_id, allowed, timestamp, nonce=0, ttl=60):
+        """Creates a signed Warrant with Expiry and Nonce."""
         sk = SigningKey(signing_key_hex, encoder=HexEncoder)
+        
+        expiry = timestamp + ttl
         
         # Payload to sign
         payload = json.dumps({
             "action": action,
             "agent_id": agent_id,
             "allowed": allowed,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "nonce": nonce,
+            "expiry": expiry
         }, sort_keys=True).encode()
         
         sig = sk.sign(payload).signature.hex()
-        return Warrant(action, agent_id, allowed, timestamp, sig)
+        return Warrant(action, agent_id, allowed, timestamp, sig, nonce, expiry)
 
     def is_valid(self, public_key_hex):
-        """Verifies the Warrant signature."""
+        """
+        Verifies the Warrant signature AND Expiry.
+        Replay protection (Nonce) must be checked by the verifier against known state.
+        """
+        # 1. Check Expiry
+        if time.time() > self.expiry:
+            return False
+            
         vk = VerifyKey(public_key_hex, encoder=HexEncoder)
         
         payload = json.dumps({
             "action": self.action,
             "agent_id": self.agent_id,
             "allowed": self.allowed,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
+            "nonce": self.nonce,
+            "expiry": self.expiry
         }, sort_keys=True).encode()
         
         try:

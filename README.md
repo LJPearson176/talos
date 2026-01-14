@@ -46,13 +46,50 @@ A pure ARM64 assembly program. It doesn't know *who* you are, only that the math
 ### 2. The Daemon (`governance.py`) - "The Pipe"
 Manages the persistent process lifecycle and translates high-level context into RPN expressions.
 - **Controller**: Auto-restarts the kernel if it crashes.
-- **Legibility**: Breaks policies into named clauses for detailed tracing.
+- **Traceability**: naming clauses allows for "Actionable Counterfactuals" (Trace).
+- **Composable Logic**: Clauses can reference previous clauses (e.g., `{tier_1} {one_sig} &`) enabling chained reasoning.
 
 ### 3. The Crypto-Controller (`crypto_governance.py`) - "The Enforcer"
 Wraps the Daemon in a secure cryptographic envelope.
 - **Signed Manifests**: Policies are loaded from `policies.json`, signed by an offline **Root Key**.
 - **Merkle Logger**: Decisions are logged to `audit.chain`, an append-only hash chain.
 - **The Warrant**: Successful verification returns a cryptographically signed `Warrant` (Ed25519) that tools must verify before execution.
+
+### 4. Real-World Proof: Autonomous SOC
+We implemented a **Constitutional Security Operations Center** to demonstrate "Intelligence Upstream of Authority."
+- **Sensors** & **Investigators** (Agents) can propose actions.
+- **Constable** (Kernel) enforces the Rules of Engagement.
+
+**The Policy (`SOCMatrix`)**:
+1.  **Low Risk** (`Sev < 30`): Auto-Approved.
+2.  **High Risk** (`Sev >= 70`): Requires **Dual Signatures** (Investigator + Human).
+3.  **Kill Switch** (`Sev >= 95`): **Auto-Deny** (No exceptions).
+
+**The Simulation**:
+```text
+[Scenario] Severity 82 (High). Investigator acts alone.
+[Constable] DENIED. Trace: {'high_risk': False} -> Missing Human Sig.
+
+[Scenario] Severity 82. Investigator + Human Co-Sign.
+[Constable] GRANTED. Warrant Issued.
+
+[Scenario] Severity 99. Kill Switch Triggered.
+[Constable] DENIED. Constraint 'kill_switch' override.
+```
+
+[Scenario] Severity 99. Kill Switch Triggered.
+[Constable] DENIED. Constraint 'kill_switch' override.
+```
+
+### 5. Constitutional Incident Response (Competing Agents)
+Demonstrates coordination failure and recovery under shared constraints.
+**The Conflict**: "Containment" wants to isolate; "Continuity" wants uptime.
+**The Resolution**:
+1.  **Severity 76**: Continuity refuses to sign. Constable **DENIES** Containment's solo request.
+2.  **Consensus**: Containment proves threat. Continuity signs. Constable **GRANTS**.
+3.  **Constitution**: Severity 99. Even with Human signature, Constable **DENIES** (Kill Switch).
+
+> "Agents cannot collude without satisfying math."
 
 ### Threat Model & Trust Boundaries
 | Component          | Trust Level      | Responsibility        | Risks Assumed                                        |
@@ -173,43 +210,30 @@ block-beta
 
 ---
 
-## 🔐 Case Study: The Two-Key Turn (Treasury Protocol)
-We implemented a simulation of a High-Value Trade scenario (`treasury_simulation.py`) to demonstrate multi-signature governance.
 
-### Policy Rules
-1.  **Micro-Trades (< $10k)**: Single Signature (Trader).
-2.  **Macro-Trades (>= $10k)**: Dual Signature (Trader + Risk Officer).
-3.  **Circuit Breaker (>= $1M)**: Auto-Reject.
+## 🛡️ Critical Surfaces & Mitigations
+Security is enforced at multiple layers to prevent Denial of Service (DoS) and exhaustion attacks.
 
-### Interaction Flow
-```mermaid
-sequenceDiagram
-    participant A as Alpha (Trader)
-    participant B as Beta (Risk)
-    participant C as Constable (Kernel)
-    
-    A->>C: Request(Buy $50k) [Sig: A]
-    C-->>A: DENIED (Trace: Need Beta)
-    
-    Note over A,B: Human/Agent Negotiation
-    A->>B: Request Co-Sign "RSI Dip"
-    B->>B: Risk Check ok?
-    B-->>A: Signed(Buy $50k) [Sig: B]
-    
-    A->>C: Request(Buy $50k) [Sig: A + B]
-    C->>C: Verify A & B
-    C->>C: RPN: (amount>=10k) AND A AND B
-    C-->>A: GRANTED (Warrant)
-```
+### 1. Daemon DoS (Rate Limiting)
+**Risk**: Malicious agent exhausting kernel resources via infinite loops.
+**Mitigation**: `CryptoGovernance` implements a **Per-Agent Token Bucket**.
+- **Rate**: 10 requests/sec.
+- **Capacity**: 20 requests burst.
+- **Enforcement**: Middleware rejects requests immediately if exhausted.
 
-### Results
-- The **Kernel** enforces the logic gate `(amount < 10k) OR (alpha_sig & beta_sig)` purely based on boolean flags derived from cryptographic signatures.
-- **Scenario**: A $50,000 trade fails with a single signature but passes once the Risk Officer co-signs. A $5M trade is rejected instantly by the Circuit Breaker.
+### 2. Stack Overflow (Kernel Guard)
+**Risk**: Recursive/Deep RPN causing stack collision with heap.
+**Mitigation**: Assembly-level **Stack Depth Monitor** in `rpn.s`.
+- Checks `x24 - sp` before every push.
+- **Panic Limit**: 4096 bytes (256 items).
+- **Result**: Kernel `panics` safely (exit 1) before memory corruption occurs. Daemon restarts automatically.
 
-### Run Simulation
-```bash
-python3 treasury_simulation.py
-```
+### 3. Replay Attacks (Warrant Hardening)
+**Risk**: Valid warrant reused indefinitely by compromised agent.
+**Mitigation**: Warrants now include:
+- **Monotonic Nonce**: Tracks state to prevent logical replays.
+- **Expiry Timestamp**: Short TTL (60s) to limit valid window.
+- **Enforcement**: Verifiers check `time.now < expiry` and must track nonces.
 
 ---
 

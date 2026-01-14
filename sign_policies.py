@@ -2,14 +2,16 @@
 import json
 from nacl.signing import SigningKey
 from nacl.encoding import HexEncoder
-from registry import STANDARD_ACCESS_POLICY, EPOCH_POLICY, LIFECYCLE_POLICY, TREASURY_POLICY
+from registry import STANDARD_ACCESS_POLICY, EPOCH_POLICY, LIFECYCLE_POLICY, TREASURY_POLICY, SOC_ESCALATION_POLICY, CONSTITUTIONAL_IR_POLICY
 
 # Aggregate policies
 POLICIES = {
     "StandardAccess": STANDARD_ACCESS_POLICY,
     "EpochGov": EPOCH_POLICY,
     "Lifecycle": LIFECYCLE_POLICY,
-    "TreasuryGuard_v1": TREASURY_POLICY
+    "TreasuryGuard_v1": TREASURY_POLICY,
+    "SOCMatrix": SOC_ESCALATION_POLICY,
+    "ConstitutionalIR": CONSTITUTIONAL_IR_POLICY
 }
 
 def sign_manifest():

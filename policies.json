@@ -1,5 +1,5 @@
 {
-  "signature": "e70233e20ab7c21b94f7496b41b0a79bed373681b6dfa289e081e6dc99896bb6c2d8766522bce4643252496be1c93d9a5b4784a38770019e622949e58b3a460b",
+  "signature": "5418de7b432c764f98ecee9f34811b5c880eaa6943717c3a594b0a6a76b544fa54391a10d417e2edd104e313b529ed7fd9e768836d7df44d7a43c1c62ec3b70b",
   "policies": {
     "StandardAccess": {
       "name": "StandardAccess",
@@ -35,6 +35,29 @@
         "auth_logic": "\n            {amount} 10000 < \n            {alpha_verified} 1 = & \n            \n            {amount} 10000 >= \n            {alpha_verified} 1 = {beta_verified} 1 = & & \n            \n            |\n        "
       },
       "combination": "AND"
+    },
+    "SOCMatrix": {
+      "name": "SOCMatrix",
+      "clauses": {
+        "low_risk": "{severity} 30 \"<\"",
+        "medium_risk": "{severity} 30 \">=\" {severity} 70 \"<\" \"&\"",
+        "high_risk": "{severity} 70 \">=\" {investigator_sig} {human_sig} \"&\" \"&\"",
+        "kill_switch": "{severity} 95 \">=\""
+      },
+      "combination": "{low_risk} {medium_risk} {high_risk} \"|\" \"|\" {kill_switch} \"~\" \"&\""
+    },
+    "ConstitutionalIR": {
+      "name": "ConstitutionalIR",
+      "clauses": {
+        "one_sig": "{containment_sig} {continuity_sig} \"|\"",
+        "two_sigs": "{containment_sig} {continuity_sig} \"&\"",
+        "human_sig_present": "{human_sig}",
+        "tier_1_valid": "{severity} 40 \">=\" {severity} 70 \"<\" \"&\" {one_sig} \"&\"",
+        "tier_2_valid": "{severity} 70 \">=\" {severity} 90 \"<\" \"&\" {two_sigs} \"&\"",
+        "tier_3_valid": "{severity} 90 \">=\" {human_sig_present} \"&\"",
+        "kill_switch": "{severity} 98 \">=\""
+      },
+      "combination": "{tier_1_valid} {tier_2_valid} {tier_3_valid} \"|\" \"|\" {kill_switch} \"~\" \"&\""
     }
   }
 }

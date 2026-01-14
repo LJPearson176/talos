@@ -116,3 +116,52 @@ TREASURY_POLICY = {
     },
     "combination": "AND" # All keys must turn
 }
+
+# ------------------------------------------------------------------------------
+# 4. AUTONOMOUS SOC POLICY (Escalation Matrix)
+# ------------------------------------------------------------------------------
+SOC_ESCALATION_POLICY = {
+    "name": "SOCMatrix",
+    "clauses": {
+        # Low Risk (Monitoring): severity < 30
+        "low_risk": "{severity} 30 \"<\"",
+        
+        # Medium Risk (Containment): 30 <= severity < 70
+        "medium_risk": "{severity} 30 \">=\" {severity} 70 \"<\" \"&\"",
+        
+        # High Risk (Remediation): severity >= 70 AND Dual Sig
+        "high_risk": "{severity} 70 \">=\" {investigator_sig} {human_sig} \"&\" \"&\"",
+        
+        # Kill Switch: severity >= 95
+        "kill_switch": "{severity} 95 \">=\""
+    },
+    # Logic: (Low OR Medium OR High) AND NOT KillSwitch
+    # Note: Use "~" for Bitwise NOT (Inv), "!" is Factorial.
+    "combination": "{low_risk} {medium_risk} {high_risk} \"|\" \"|\" {kill_switch} \"~\" \"&\""
+}
+
+# New: Constitutional Incident Response (Competing Agents)
+CONSTITUTIONAL_IR_POLICY = {
+    "name": "ConstitutionalIR",
+    "clauses": {
+        # Signature Requirements
+        "one_sig": "{containment_sig} {continuity_sig} \"|\"",
+        "two_sigs": "{containment_sig} {continuity_sig} \"&\"",
+        "human_sig_present": "{human_sig}",
+
+        # Severity Tiers
+        # Tier 1: 40 <= Sev < 70 -> Requires 1 Sig
+        "tier_1_valid": "{severity} 40 \">=\" {severity} 70 \"<\" \"&\" {one_sig} \"&\"",
+        
+        # Tier 2: 70 <= Sev < 90 -> Requires 2 Sigs (Consensus)
+        "tier_2_valid": "{severity} 70 \">=\" {severity} 90 \"<\" \"&\" {two_sigs} \"&\"",
+        
+        # Tier 3: Sev >= 90 -> Requires Human Sig
+        "tier_3_valid": "{severity} 90 \">=\" {human_sig_present} \"&\"",
+        
+        # Kill Switch: Sev >= 98 -> Auto Deny
+        "kill_switch": "{severity} 98 \">=\""
+    },
+    # Logic: (Tier1 OR Tier2 OR Tier3) AND NOT KillSwitch
+    "combination": "{tier_1_valid} {tier_2_valid} {tier_3_valid} \"|\" \"|\" {kill_switch} \"~\" \"&\""
+}

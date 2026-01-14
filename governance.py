@@ -114,10 +114,15 @@ class Policy:
             # We assume template strings are safe since they come from trusted registry
             try:
                 rpn_expr = template.format(**context)
-                trace[clause_name] = self._run_kernel(rpn_expr)
+                result_bool = self._run_kernel(rpn_expr)
+                trace[clause_name] = result_bool
+                
+                # Feedback Loop: Allow subsequent clauses to use this result
+                context[clause_name] = "1" if result_bool else "0"
             except Exception as e:
                 print(f"[Policy] Error evaluating clause '{clause_name}': {e}")
                 trace[clause_name] = False # Fail Closed
+                context[clause_name] = "0"
 
         # 2. Combine results
         # Current logic is simple OR or AND. 
@@ -127,8 +132,15 @@ class Policy:
         elif self.combination == "AND":
             final_result = all(trace.values())
         else:
-            # Default fallback?
-            final_result = False
+            # RPN Combination Logic
+            # Map trace booleans to "1"/"0"
+            trace_map = {k: ("1" if v else "0") for k, v in trace.items()}
+            try:
+                combined_expr = self.combination.format(**trace_map)
+                final_result = self._run_kernel(combined_expr)
+            except Exception as e:
+                print(f"[Policy] Error evaluating combination logic: {e}")
+                final_result = False
 
         return DecisionProof(final_result, trace, self.name)
 

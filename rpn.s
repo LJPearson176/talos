@@ -673,6 +673,13 @@ call_parse_int:
     b       push_result
 
 push_result:
+    // Stack Guard: Prevent overflow
+    // Limit: 4096 bytes (256 items * 16 bytes)
+    mov     x9, sp
+    sub     x9, x24, x9
+    cmp     x9, #4096
+    b.gt    panic
+
     str     x0, [sp, #-16]!
     b       arg_loop
 

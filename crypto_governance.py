@@ -5,6 +5,28 @@ from governance import DAEMON, Policy
 from governance_crypto import MerkleLogger, Warrant
 from policy_loader import load_verified_policies
 
+class RateLimiter:
+    def __init__(self, rate=10.0, capacity=20.0):
+        self.rate = rate
+        self.capacity = capacity
+        self.buckets = {} # agent_id -> (tokens, last_time)
+
+    def allowed(self, agent_id):
+        now = time.time()
+        tokens, last = self.buckets.get(agent_id, (self.capacity, now))
+        
+        # Refill
+        delta = now - last
+        tokens = min(self.capacity, tokens + delta * self.rate)
+        
+        if tokens >= 1.0:
+            self.buckets[agent_id] = (tokens - 1.0, now)
+            return True
+        else:
+            self.buckets[agent_id] = (tokens, now)
+            return False
+
+
 class CryptoGovernance:
     def __init__(self, manifest_path="policies.json", keys_path="keys.json"):
         # 1. Load Keys
@@ -26,10 +48,21 @@ class CryptoGovernance:
         # 3. Init Merkle Logger
         self.logger = MerkleLogger("audit.chain")
         
+        # 4. Rate Limiter (Token Bucket)
+        self.limiter = RateLimiter(rate=10.0, capacity=20.0)
+        
+        # 5. Global Monotonic Counter (Replay Protection)
+        self.nonce = 0
+        
     def verify_action(self, agent_id, action, role_mask, context_overrides=None):
         """
         Verifies an action and returns a signed Warrant (or None/Denied Warrant).
         """
+        # 0. Rate Limit Check
+        if not self.limiter.allowed(agent_id):
+            print(f"[CryptoGov] Rate Limit Exceeded for {agent_id}")
+            return self._deny(agent_id, action, "RateLimitExceeded")
+
         # 1. Select Policy
         # For demo, we default to StandardAccess unless EPOCH is set
         policy_name = "StandardAccess"
@@ -67,14 +100,20 @@ class CryptoGovernance:
         
         print(f"[CryptoGov] Decision Logged. Block Hash: {block_hash[:16]}...")
 
+        print(f"[CryptoGov] Decision Logged. Block Hash: {block_hash[:16]}...")
+
         # 4. Issue Warrant
+        self.nonce += 1
+        
         if proof.allowed:
             warrant = Warrant.create(
                 self.constable_priv,
                 action,
                 agent_id,
                 allowed=True,
-                timestamp=time.time()
+                timestamp=time.time(),
+                nonce=self.nonce,
+                ttl=60
             )
             return warrant
         else:
@@ -85,11 +124,14 @@ class CryptoGovernance:
                 action,
                 agent_id,
                 allowed=False,
-                timestamp=time.time()
+                timestamp=time.time(),
+                nonce=self.nonce,
+                ttl=60
             )
 
     def _deny(self, agent_id, action, reason):
-        return Warrant.create(self.constable_priv, action, agent_id, False, time.time())
+        self.nonce += 1
+        return Warrant.create(self.constable_priv, action, agent_id, False, time.time(), nonce=self.nonce, ttl=60)
 
 # Helper to map action strings to IDs (Duplicate from registry logic for now)
 def action_map(action_name):

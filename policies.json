@@ -1,0 +1,40 @@
+{
+  "signature": "e70233e20ab7c21b94f7496b41b0a79bed373681b6dfa289e081e6dc99896bb6c2d8766522bce4643252496be1c93d9a5b4784a38770019e622949e58b3a460b",
+  "policies": {
+    "StandardAccess": {
+      "name": "StandardAccess",
+      "clauses": {
+        "is_admin": "{role_mask} 4 \"&\" 4 \"=\"",
+        "is_safe_action": "{action_id} 200 \"<\" {action_id} 99 \">\" \"&\""
+      },
+      "combination": "OR"
+    },
+    "EpochGov": {
+      "name": "EpochState",
+      "clauses": {
+        "is_normal_mode": "{epoch} 0 \"=\"",
+        "is_emergency_mode": "{epoch} 1 \"=\"",
+        "is_admin": "{role_mask} 4 \"&\" 4 \"=\""
+      },
+      "combination": "OR"
+    },
+    "Lifecycle": {
+      "name": "Lifecycle",
+      "clauses": {
+        "high_quality": "{quality_score} 80 \">\"",
+        "tests_passed": "{test_result} 1 \"=\"",
+        "is_admin": "{role_mask} 4 \"&\" 4 \"=\"",
+        "rate_limit_ok": "{request_id} 1000 \"<\""
+      },
+      "combination": "OR"
+    },
+    "TreasuryGuard_v1": {
+      "name": "TreasuryGuard_v1",
+      "clauses": {
+        "circuit_breaker": "{amount} 1000000 \"<\"",
+        "auth_logic": "\n            {amount} 10000 < \n            {alpha_verified} 1 = & \n            \n            {amount} 10000 >= \n            {alpha_verified} 1 = {beta_verified} 1 = & & \n            \n            |\n        "
+      },
+      "combination": "AND"
+    }
+  }
+}
